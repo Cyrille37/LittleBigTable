@@ -261,6 +261,7 @@ If you need to add or adjust the default HTTP headers pass the headers key in th
 <script>
   let options = {
   headers: {
+    'Accept': 'application/json',
     'Content-Type': 'application/json',
     'X-Requested-With': 'littleBIGtable'
   },
