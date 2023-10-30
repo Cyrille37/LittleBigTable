@@ -57,7 +57,7 @@ let opts = {
 }
 ```
 ```html
-<div x-data="littleBIGtable(opts)" x-init="init()">
+<div x-data="littleBIGtable(opts)">
 
 </div>
 ```
@@ -91,7 +91,7 @@ npm install littlebigtable
 This is the starting point for all littleBIGtables, you must wrap your table in an AlpineJS component, provide a url to your api endpoint and specify your table columns and rows. The code below is an example of the minium required.
 
 ```html
-<div x-data="littleBIGtable({url:'/location/of/your/api'})" x-init="init()">
+<div x-data="littleBIGtable({url:'/location/of/your/api'})">
 	<table>
 		<thead>
 			<tr>
@@ -266,7 +266,7 @@ If you need to add or adjust the default HTTP headers pass the headers key in th
   },
 }
 </script>
-<div x-data="littleBIGtable(options)" x-init="init()">
+<div x-data="littleBIGtable(options)">
   ...
 </div>
 ``` 
@@ -285,7 +285,7 @@ let options = {
   },
 }
 </script>
-<div x-data="littleBIGtable(options)" x-init="init()">
+<div x-data="littleBIGtable(options)">
   ...
 </div>
 ``` 
