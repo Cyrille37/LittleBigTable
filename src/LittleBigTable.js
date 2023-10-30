@@ -230,8 +230,8 @@ function littleBIGtable(settings) {
             if (undefined == this.sort[col]) {
                 this.sort[col] = 'asc';
             } else if (this.sort[col] == 'asc') {
-                this.sort[col] = 'dsc';
-            } else if (this.sort[col] == 'dsc') {
+                this.sort[col] = 'desc';
+            } else if (this.sort[col] == 'desc') {
                 delete this.sort[col];
             }
         },
