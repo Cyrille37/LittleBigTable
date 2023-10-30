@@ -18,8 +18,9 @@ function littleBIGtable(settings) {
                 summary: 'rows'
             },
             headers: {
-              'Content-Type': 'application/json',
-              'X-Requested-With': 'littleBIGtable'
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'littleBIGtable'
             },
             formatters: {},
             icons: '../dist/icons.svg',
