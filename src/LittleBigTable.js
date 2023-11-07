@@ -46,7 +46,9 @@ function littleBIGtable(settings) {
             limit: 10,
             offset: 0,
             search: null,
+            search_fields: null,
             total: 0,
+            sort: null,
             filters: {},
         },
         // stores the table rows
@@ -67,6 +69,8 @@ function littleBIGtable(settings) {
                     this.settings[i] = settings[i];
                 }
             }
+            // inspect url for known parameters
+            this.initFromLocation();
             // fetch data
             this.fetch();
         },
@@ -95,6 +99,44 @@ function littleBIGtable(settings) {
                     console.error('Network fetch failed: ', error);
                     this.setStatus(this.settings.messages.failed);
                 });
+        },
+        /**
+         * Some parameters are json encoded.
+         * 
+         * - ?filters={%22productTags.label%22%3A[%22HAudi%22%2C%22HVisu%22]}&search=%C3%A9l
+         * - ?filters={%22productTags.label%22%3A[%22HAudi%22%2C%22HVisu%22]}&search=%C3%A9l&search_fields=user.lastname,user.firstname
+         * - ?filters={%22productTags.label%22%3A[%22HAudi%22%2C%22HVisu%22]}&search=%C3%A9l&search_fields=user.lastname,user.firstname
+         */
+        initFromLocation: function() {
+            const qs = new URLSearchParams(window.location.search);
+            for( let i in this.params )
+            {
+                if( qs.has(i) )
+                {
+                    switch( i )
+                    {
+                    case 'filters':
+                        const data = JSON.parse( qs.get(i));
+                        for( let j in data )
+                        {
+                            if( Array.isArray(data[j]) )
+                                data[j].every( (v) => this.settings.filters[j].push( v ) );
+                            else
+                                this.settings.filters[j].push( data[j] ); 
+                        }
+                        break;
+                    case 'sort':
+                        let s ;
+                        qs.get(i).split(',').every( (p)=>{
+                            s = p.split(':');
+                            this.sort[s[0]] = s[1];
+                        });
+                        break;
+                    default:
+                        this.params[i] = qs.get(i); 
+                    }
+                }
+            }
         },
         /**
          * Adds the data row to the table.
