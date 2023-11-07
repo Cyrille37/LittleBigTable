@@ -1,3 +1,5 @@
+"use strict";
+
 function littleBIGtable(settings) {
     return {
         // settings for the developer to override
@@ -9,9 +11,10 @@ function littleBIGtable(settings) {
             args: {
                 limit: 'limit',
                 offset: 'offset',
+                sort: 'sort',
                 search: 'search',
                 search_fields: 'search_fields' ,
-                sort: 'sort'
+                filters: 'filters',
             },
             messages: {
                 loading: 'Loading...',
@@ -25,7 +28,13 @@ function littleBIGtable(settings) {
             },
             search_fields: [],
             formatters: {},
-            icons: '../dist/icons.svg',
+            icons: {
+                asc: 'fa fa-arrow-up',
+                desc: 'fa fa-arrow-down',
+                //none: 'fa fa-border-none',
+                none: 'fa fa-arrow-down-up-across-line muted',
+            },
+            filters: null,
         },
         // stores the ui state
         meta: {
@@ -38,6 +47,7 @@ function littleBIGtable(settings) {
             offset: 0,
             search: null,
             total: 0,
+            filters: {},
         },
         // stores the table rows
         rows: [],
@@ -52,7 +62,7 @@ function littleBIGtable(settings) {
                 this.params.limit = this.settings.limit;
             }
             // apply settings - should this use getters/setter methods to sanity check input?
-            for (i in settings) {
+            for (let i in settings) {
                 if (this.settings.hasOwnProperty(i)) {
                     this.settings[i] = settings[i];
                 }
@@ -75,7 +85,7 @@ function littleBIGtable(settings) {
                 }).then(json => {
                     this.rows = [];
                     this.params.total = json.total;
-                    for (i in json.data) {
+                    for (let i in json.data) {
                         this.addRow(json.data[i]);
                     }
                 }).then(() => {
@@ -86,10 +96,13 @@ function littleBIGtable(settings) {
                     this.setStatus(this.settings.messages.failed);
                 });
         },
-        // adds the data row to the table
+        /**
+         * Adds the data row to the table.
+         * @param array data 
+         */
         addRow: function (data) {
             // todo check for field formatter by name
-            let row = {};
+            let i, fn, row = {};
             for (i in data) {
                 if (typeof this.settings.formatters[i] == 'function') {
                     fn = this.settings.formatters[i];
@@ -98,7 +111,7 @@ function littleBIGtable(settings) {
                     row[i] = data[i];
                 }
             }
-            // add columns from formatters
+            // add columns from formatters, aka "virtual column"
             for (i in this.settings.formatters) {
                 if (!row.hasOwnProperty(i)) {
                     fn = this.settings.formatters[i];
@@ -109,12 +122,22 @@ function littleBIGtable(settings) {
         },
         // returns the url params for the GET request
         getUrlParams: function () {
+            let i, j ;
             let str = '?' + this.settings.args.limit + '=' + this.params.limit
                 + '&' + this.settings.args.offset + '=' + this.params.offset;
 
             if (this.settings.search_fields.length > 0 && this.params.search) {
                 str += '&' + this.settings.args.search + '=' + this.params.search.trim();
                 str += '&' + this.settings.args.search_fields + '=' +this.settings.search_fields.join(',');
+            }
+
+            for( i in this.settings.filters )
+            {
+                console.debug(i, this.settings.filters[i]);
+                for( j in this.settings.filters[i] )
+                {
+                    str += '&' + this.settings.args.filters+'['+i+'][]' + '=' + this.settings.filters[i][j] ;
+                }
             }
 
             let sort = null;
@@ -203,7 +226,8 @@ function littleBIGtable(settings) {
             if (undefined !== this.sort[col]) {
                 icon = this.sort[col];
             }
-            return '<svg class="icon"><use xlink:href="' + this.settings.icons + '#sort-' + icon + '"></use></svg>';
+            //return '<svg class="icon"><use xlink:href="' + this.settings.icons + '#sort-' + icon + '"></use></svg>';
+            return '<i class="'+this.settings.icons[icon]+'"></i>' ;
         },
         // set the number of rows to show per page and saves preference in localStorage
         // tries to keep the current rows on the page
@@ -268,8 +292,9 @@ function littleBIGtable(settings) {
             //console.debug('doSearch()');
             if (! this.settings.search_fields || this.settings.search_fields.length==0 )
                 return ;
-            if( ! this.params.search || this.params.search.trim().length == 0 )
-                return ;
+            // passthru if previous search deleted
+            //if( ! this.params.search || this.params.search.trim().length == 0 )
+            //    return ;
             this.params.offset = 0;
             this.fetch();
         },
