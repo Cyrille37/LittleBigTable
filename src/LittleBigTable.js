@@ -174,7 +174,7 @@ function littleBIGtable(settings) {
                     for (j in this.settings.filters[i]) {
                         str += '&' + this.settings.args.filters + '[' + i + '][]' + '=' + this.settings.filters[i][j];
                     }
-                else
+                else if( this.settings.filters[i] )
                     str += '&' + this.settings.args.filters + '[' + i + ']' + '=' + this.settings.filters[i];
             }
 
