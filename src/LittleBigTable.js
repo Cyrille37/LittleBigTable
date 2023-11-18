@@ -13,9 +13,11 @@ function littleBIGtable(settings) {
                 offset: 'offset',
                 sort: 'sort',
                 search: 'search',
-                search_fields: 'search_fields' ,
+                search_fields: 'search_fields',
                 filters: 'filters',
             },
+            search_fields: [],
+            filters: null,
             messages: {
                 loading: 'Loading...',
                 failed: 'Loading failed',
@@ -26,7 +28,6 @@ function littleBIGtable(settings) {
                 'Content-Type': 'application/json',
                 'X-Requested-With': 'littleBIGtable'
             },
-            search_fields: [],
             formatters: {},
             icons: {
                 asc: 'fa fa-arrow-up',
@@ -34,7 +35,6 @@ function littleBIGtable(settings) {
                 //none: 'fa fa-border-none',
                 none: 'fa fa-arrow-down-up-across-line muted',
             },
-            filters: null,
         },
         // stores the ui state
         meta: {
@@ -74,6 +74,39 @@ function littleBIGtable(settings) {
             // fetch data
             this.fetch();
         },
+        /**
+         * Some parameters are json encoded.
+         * 
+         * - ?filters={%22productTags.label%22%3A[%22HAudi%22%2C%22HVisu%22]}&search=%C3%A9l
+         * - ?filters={%22productTags.label%22%3A[%22HAudi%22%2C%22HVisu%22]}&search=%C3%A9l&search_fields=user.lastname,user.firstname
+         */
+        initFromLocation: function () {
+            const qs = new URLSearchParams(window.location.search);
+            for (let i in this.params) {
+                if (qs.has(i)) {
+                    switch (i) {
+                        case 'filters':
+                            const data = JSON.parse(qs.get(i));
+                            for (let j in data) {
+                                if (Array.isArray(data[j]))
+                                    data[j].every((v) => this.settings.filters[j].push(v));
+                                else
+                                    this.settings.filters[j].push(data[j]);
+                            }
+                            break;
+                        case 'sort':
+                            let s;
+                            qs.get(i).split(',').every((p) => {
+                                s = p.split(':');
+                                this.sort[s[0]] = s[1];
+                            });
+                            break;
+                        default:
+                            this.params[i] = qs.get(i);
+                    }
+                }
+            }
+        },
         // fetch and populate data using current state
         fetch: function () {
             //console.debug('fetch()');
@@ -101,44 +134,6 @@ function littleBIGtable(settings) {
                 });
         },
         /**
-         * Some parameters are json encoded.
-         * 
-         * - ?filters={%22productTags.label%22%3A[%22HAudi%22%2C%22HVisu%22]}&search=%C3%A9l
-         * - ?filters={%22productTags.label%22%3A[%22HAudi%22%2C%22HVisu%22]}&search=%C3%A9l&search_fields=user.lastname,user.firstname
-         * - ?filters={%22productTags.label%22%3A[%22HAudi%22%2C%22HVisu%22]}&search=%C3%A9l&search_fields=user.lastname,user.firstname
-         */
-        initFromLocation: function() {
-            const qs = new URLSearchParams(window.location.search);
-            for( let i in this.params )
-            {
-                if( qs.has(i) )
-                {
-                    switch( i )
-                    {
-                    case 'filters':
-                        const data = JSON.parse( qs.get(i));
-                        for( let j in data )
-                        {
-                            if( Array.isArray(data[j]) )
-                                data[j].every( (v) => this.settings.filters[j].push( v ) );
-                            else
-                                this.settings.filters[j].push( data[j] ); 
-                        }
-                        break;
-                    case 'sort':
-                        let s ;
-                        qs.get(i).split(',').every( (p)=>{
-                            s = p.split(':');
-                            this.sort[s[0]] = s[1];
-                        });
-                        break;
-                    default:
-                        this.params[i] = qs.get(i); 
-                    }
-                }
-            }
-        },
-        /**
          * Adds the data row to the table.
          * @param array data 
          */
@@ -164,22 +159,23 @@ function littleBIGtable(settings) {
         },
         // returns the url params for the GET request
         getUrlParams: function () {
-            let i, j ;
+            let i, j;
             let str = '?' + this.settings.args.limit + '=' + this.params.limit
                 + '&' + this.settings.args.offset + '=' + this.params.offset;
 
             if (this.settings.search_fields.length > 0 && this.params.search) {
                 str += '&' + this.settings.args.search + '=' + this.params.search.trim();
-                str += '&' + this.settings.args.search_fields + '=' +this.settings.search_fields.join(',');
+                str += '&' + this.settings.args.search_fields + '=' + this.settings.search_fields.join(',');
             }
 
-            for( i in this.settings.filters )
-            {
-                console.debug(i, this.settings.filters[i]);
-                for( j in this.settings.filters[i] )
-                {
-                    str += '&' + this.settings.args.filters+'['+i+'][]' + '=' + this.settings.filters[i][j] ;
-                }
+            for (i in this.settings.filters) {
+                //console.debug(i, this.settings.filters[i]);
+                if( Array.isArray(this.settings.filters[i]) )
+                    for (j in this.settings.filters[i]) {
+                        str += '&' + this.settings.args.filters + '[' + i + '][]' + '=' + this.settings.filters[i][j];
+                    }
+                else
+                    str += '&' + this.settings.args.filters + '[' + i + ']' + '=' + this.settings.filters[i];
             }
 
             let sort = null;
@@ -192,6 +188,29 @@ function littleBIGtable(settings) {
 
             return str;
         },
+        // handle the user search input, always returning to the start of the results 
+        doSearch: function () {
+            //console.debug('doSearch()');
+            if (!this.settings.search_fields || this.settings.search_fields.length == 0)
+                return;
+            // passthru if previous search deleted
+            //if( ! this.params.search || this.params.search.trim().length == 0 )
+            //    return ;
+            this.params.offset = 0;
+            this.fetch();
+        },
+        // handle the column sort
+        doSort: function (col) {
+            //console.debug('doSort()');
+            if (false == this.settings.multisort) {
+                let state = this.sort[col];
+                this.sort = {};
+                this.sort[col] = state;
+            }
+            this.toggleSortColumn(col);
+            this.fetch();
+        },
+
         // returns the current page number
         getCurrentPage: function () {
             if (this.params.offset == 0) {
@@ -269,7 +288,7 @@ function littleBIGtable(settings) {
                 icon = this.sort[col];
             }
             //return '<svg class="icon"><use xlink:href="' + this.settings.icons + '#sort-' + icon + '"></use></svg>';
-            return '<i class="'+this.settings.icons[icon]+'"></i>' ;
+            return '<i class="' + this.settings.icons[icon] + '"></i>';
         },
         // set the number of rows to show per page and saves preference in localStorage
         // tries to keep the current rows on the page
@@ -328,28 +347,7 @@ function littleBIGtable(settings) {
         },
         // todo jump to a particular page by number
         goToPage: function () {
-        },
-        // handle the user search input, always returning to the start of the results 
-        doSearch: function () {
-            //console.debug('doSearch()');
-            if (! this.settings.search_fields || this.settings.search_fields.length==0 )
-                return ;
-            // passthru if previous search deleted
-            //if( ! this.params.search || this.params.search.trim().length == 0 )
-            //    return ;
-            this.params.offset = 0;
-            this.fetch();
-        },
-        // handle the column sort
-        doSort: function (col) {
-            //console.debug('doSort()');
-            if (false == this.settings.multisort) {
-                let state = this.sort[col];
-                this.sort = {};
-                this.sort[col] = state;
-            }
-            this.toggleSortColumn(col);
-            this.fetch();
+            console.error('Not implemented');
         },
         debug: function () {
             //return "Params:\n" + JSON.stringify(this.params) + "\nSort:\n" + JSON.stringify(this.sort) + "\nMeta:\n" + JSON.stringify(this.meta) + "\nSettings:\n" + JSON.stringify(this.settings);
