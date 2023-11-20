@@ -17,6 +17,12 @@ function littleBIGtable(settings) {
                 filters: 'filters',
             },
             search_fields: [],
+            /**
+             * filters: {
+             *   "productTags.label": [], <- an array (checkbox)
+             *   "validated_at": null, <- a value (radio)
+             *   },
+             */
             filters: null,
             messages: {
                 loading: 'Loading...',
@@ -49,7 +55,6 @@ function littleBIGtable(settings) {
             search_fields: null,
             total: 0,
             sort: null,
-            filters: {},
         },
         // stores the table rows
         rows: [],
@@ -75,25 +80,18 @@ function littleBIGtable(settings) {
             this.fetch();
         },
         /**
-         * Some parameters are json encoded.
+         * Update config/settings from URL
          * 
          * - ?filters={%22productTags.label%22%3A[%22HAudi%22%2C%22HVisu%22]}&search=%C3%A9l
          * - ?filters={%22productTags.label%22%3A[%22HAudi%22%2C%22HVisu%22]}&search=%C3%A9l&search_fields=user.lastname,user.firstname
+         * - ?limit=50&offset=0&filters[productTags.label][]=HVisu&filters[validated_at]=NULL
          */
         initFromLocation: function () {
             const qs = new URLSearchParams(window.location.search);
+            //console.debug('qs', qs );
             for (let i in this.params) {
                 if (qs.has(i)) {
                     switch (i) {
-                        case 'filters':
-                            const data = JSON.parse(qs.get(i));
-                            for (let j in data) {
-                                if (Array.isArray(data[j]))
-                                    data[j].every((v) => this.settings.filters[j].push(v));
-                                else
-                                    this.settings.filters[j].push(data[j]);
-                            }
-                            break;
                         case 'sort':
                             let s;
                             qs.get(i).split(',').every((p) => {
@@ -103,6 +101,26 @@ function littleBIGtable(settings) {
                             break;
                         default:
                             this.params[i] = qs.get(i);
+                    }
+                }
+            }
+            for( let i in this.settings.filters )
+            {
+                //console.debug('filters', i, );
+                if( Array.isArray( this.settings.filters[i] ))
+                {
+                    const p = 'filters['+i+'][]' ;
+                    if (qs.has(p)) {
+                        //console.debug('filters got ', p, qs.getAll(p) );
+                        this.settings.filters[i].push( ...qs.getAll(p) );
+                    }
+                }
+                else
+                {
+                    const p = 'filters['+i+']' ;
+                    if (qs.has(p)) {
+                        //console.debug('filters got ', p, qs.get(p) );
+                        this.settings.filters[i] = qs.get(p) ;
                     }
                 }
             }
