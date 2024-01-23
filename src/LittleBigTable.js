@@ -1,5 +1,7 @@
 "use strict";
-
+/**
+ * Largely inspired from https://github.com/indgy/LittleBigTable
+ */
 function littleBIGtable(settings) {
     return {
         // settings for the developer to override
@@ -270,7 +272,7 @@ function littleBIGtable(settings) {
             if (this.params.total < this.params.limit) {
                 return 0;
             }
-            for (i = 0; i < parseInt(this.params.total); i += parseInt(this.params.limit)) {
+            for (let i = 0; i < parseInt(this.params.total); i += parseInt(this.params.limit)) {
                 if (i >= this.getPrevPageOffset() && i <= this.getNextPageOffset()) {
                     return parseInt(i) + parseInt(this.params.limit);
                 }
@@ -290,14 +292,14 @@ function littleBIGtable(settings) {
             return int;
         },
         // returns a status summary, either number of rows or number of pages
-        getSummary: function (type = 'rows', name = 'results') {
+        getSummary: function (type = 'rows', name = 'résultats') {
             if (!this.rows.length) {
                 return 'No results';
             }
             if (type.toLowerCase() == 'pages') {
-                return 'Showing page <strong>' + this.getCurrentPage() + '</strong> of <strong>' + this.getTotalPages() + '</strong>';
+                return 'Page <strong>' + this.getCurrentPage() + '</strong> sur <strong>' + this.getTotalPages() + '</strong>';
             }
-            return 'Showing <strong>' + this.getFirstDisplayedRow() + '</strong> to <strong>' + this.getLastDisplayedRow() + '</strong> of <strong>' + this.getTotalRows() + '</strong> ' + name;
+            return 'Lignes <strong>' + this.getFirstDisplayedRow() + '</strong> sur <strong>' + this.getLastDisplayedRow() + '</strong> sur <strong>' + this.getTotalRows() + '</strong> ' + name;
         },
         // returns the required icon for the sort state
         getSortIcon: function (col) {
